@@ -1,0 +1,165 @@
+/* --- Fonts --- */
+:root {
+    --font-sans: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+    font-family: var(--font-sans);
+}
+
+.font-mono {
+    font-family: var(--font-mono);
+}
+
+/* --- Ocean Gradient Animation (Deep Sea Version) --- */
+.bg-ocean-gradient {
+    /* Chuyển sang tông màu tối hơn: Slate 950, Blue 950, Cyan 900 */
+    background: linear-gradient(-45deg, #020617, #0f172a, #0c4a6e, #020617);
+    background-size: 400% 400%;
+}
+
+@keyframes ocean {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.animate-ocean {
+    animation: ocean 20s ease infinite; /* Chậm lại một chút cho cảm giác nặng của nước */
+}
+
+/* --- Glassmorphism Utilities (Darker & Deeper) --- */
+.glass-panel {
+    background: rgba(2, 6, 23, 0.7); /* Nền tối hơn */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3); /* Bóng đổ đậm hơn */
+}
+
+.glass-card {
+    background: rgba(2, 6, 23, 0.4); /* Trong suốt hơn nhưng base màu đen */
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng nảy nhẹ */
+}
+
+.glass-card:hover {
+    background: rgba(6, 182, 212, 0.05); /* Tint màu cyan nhẹ khi hover */
+    border-color: rgba(6, 182, 212, 0.2); /* Cyan viền tối */
+    transform: translateY(-4px);
+    /* Hiệu ứng phát sáng nhẹ (Deep Sea Glow) */
+    box-shadow: 0 10px 40px -10px rgba(6, 182, 212, 0.15); 
+}
+
+/* --- Navigation Buttons --- */
+.nav-btn {
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #64748b; /* Slate 500 - tối hơn chút */
+    transition: all 0.3s ease;
+    border: 1px solid transparent; /* Giữ layout không nhảy */
+}
+
+.nav-btn:hover {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-btn.active {
+    color: #fff;
+    /* Gradient trầm hơn: Cyan 600 -> Blue 600 */
+    background: linear-gradient(90deg, #0891b2, #2563eb); 
+    box-shadow: 0 0 15px rgba(8, 145, 178, 0.4); /* Glow nhẹ */
+    border-color: transparent;
+}
+
+/* --- Animations --- */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeInUp {
+    animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes slowBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); } /* Biên độ lớn hơn chút */
+}
+.animate-bounce-slow {
+    animation: slowBounce 4s infinite ease-in-out; /* Chậm hơn */
+}
+
+/* --- Image Slider Fixes --- */
+.img-comp-wrapper {
+    position: relative;
+    width: 100%;
+}
+.img-comp-img {
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+.img-comp-img img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    /* Thêm chút filter cho ảnh chìm vào nền tối */
+    filter: brightness(0.9); 
+}
+
+/* --- Word Cloud Styles --- */
+.word-tag {
+    display: inline-block;
+    transition: all 0.3s ease;
+    cursor: default;
+    user-select: none;
+    line-height: 1;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    white-space: nowrap;
+}
+
+.word-tag:hover {
+    transform: scale(1.1) rotate(2deg) !important; /* Force override animation transform */
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(34, 211, 238, 0.5);
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.3);
+    z-index: 10;
+}
+
+/* Animation trôi nổi ngẫu nhiên */
+@keyframes floatWord {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-5px) rotate(1deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(5px) rotate(-1deg); }
+}
+
+.animate-float {
+    animation: floatWord 6s ease-in-out infinite;
+}
+
+/* Các biến thể delay để không bị đồng bộ */
+.delay-0 { animation-delay: 0s; }
+.delay-1 { animation-delay: 1s; }
+.delay-2 { animation-delay: 2s; }
+.delay-3 { animation-delay: 3s; }
+.delay-4 { animation-delay: 4s; }
+
+/* Word Cloud Canvas Wrapper */
+#word-cloud-canvas {
+    display: block;
+    cursor: pointer;
+}

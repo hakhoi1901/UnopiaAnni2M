@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Anniversary - Ocean Edition</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <!-- WordCloud2.js (Thư viện tạo Word Cloud chuyên nghiệp) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/wordcloud2.js/1.2.2/wordcloud2.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <!-- CSS Riêng -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="font-sans text-slate-100 antialiased selection:bg-cyan-500 selection:text-white overflow-x-hidden">
+
+    <!-- BACKGROUND ANIMATION -->
+    <div class="fixed inset-0 -z-10 bg-ocean-gradient animate-ocean"></div>
+    <div class="fixed inset-0 -z-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay"></div>
+
+    <!-- NAVBAR (Floating Glass) -->
+    <nav class="fixed top-4 left-0 right-0 z-50 px-4">
+        <div class="max-w-5xl mx-auto glass-panel rounded-full px-6 py-3 flex items-center justify-between shadow-lg shadow-cyan-900/20 border border-white/10">
+            <div class="flex items-center gap-2">
+                <div class="bg-cyan-500/20 p-2 rounded-full">
+                    <i data-lucide="waves" class="w-5 h-5 text-cyan-400"></i>
+                </div>
+                <span class="font-bold font-mono text-lg tracking-tight text-white hidden md:block">
+                    UNOPIA<span class="text-cyan-400 animate-pulse">_</span>
+                </span>
+            </div>
+            
+            <!-- Menu Desktop -->
+            <div class="flex space-x-1" id="nav-menu">
+                <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
+                <button class="nav-btn" data-tab="timeline">Timeline</button>
+                <button class="nav-btn" data-tab="gallery">Gallery</button>
+                <button class="nav-btn" data-tab="words">Top Words</button>
+                <button class="nav-btn" data-tab="oracle">Oracle</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="max-w-5xl mx-auto px-4 mt-28 pb-20">
+        
+        <!-- HERO SECTION -->
+        <section class="mb-12 text-center relative">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950/50 border border-cyan-500/30 text-cyan-400 text-xs font-mono mb-4 animate-bounce-slow">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+                </span>
+                System Operational
+            </div>
+            
+            <h1 class="text-4xl md:text-6xl font-extrabold mb-4 tracking-tight leading-tight">
+                <span class="bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 via-blue-400 to-purple-400">
+                    UNOPIA
+                </span>
+            </h1>
+            <p class="text-slate-300 text-lg md:text-xl max-w-2xl mx-auto font-light leading-relaxed">
+                Từ những dòng code đầu tiên đến những lần debate nảy lửa. <br>
+                Đây là hành trình từ <span class="font-mono text-cyan-300">"Hello World"</span> đến <span class="font-mono text-red-300">"Error 500"</span>.
+            </p>
+
+            <!-- Uptime Display (Glass Card) -->
+            <div class="mt-8 inline-block">
+                <div class="glass-panel px-8 py-4 rounded-2xl border border-white/10 shadow-2xl shadow-cyan-900/20 relative group overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                    <div class="text-xs text-cyan-200/60 uppercase tracking-widest font-mono mb-1">Server Uptime</div>
+                    <div id="uptime-display" class="font-mono text-2xl md:text-3xl font-bold text-white relative z-10 flex gap-4 justify-center items-center">
+                        Calculating...
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONTENT TABS -->
+        
+        <!-- 1. DASHBOARD -->
+        <div id="dashboard" class="tab-content block animate-fadeInUp">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Stats Cards -->
+                <div class="glass-card p-6 rounded-3xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i data-lucide="server" class="w-24 h-24 text-cyan-400"></i>
+                    </div>
+                    <h2 class="text-xl font-bold mb-6 flex items-center text-cyan-300">
+                        <i data-lucide="activity" class="mr-2 w-5 h-5"></i> Chỉ Số Sinh Tồn
+                    </h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="stat-item bg-white/5 p-4 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                            <div class="text-3xl font-bold text-white">5</div>
+                            <div class="text-xs text-slate-400 mt-1">Thành viên</div>
+                        </div>
+                        <div class="stat-item bg-white/5 p-4 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                            <div class="text-3xl font-bold text-blue-400">1</div>
+                            <div class="text-xs text-slate-400 mt-1">Team</div>
+                        </div>
+                        <div class="stat-item bg-white/5 p-4 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                            <div class="text-3xl font-bold text-yellow-400">∞</div>
+                            <div class="text-xs text-slate-400 mt-1">Content</div>
+                        </div>
+                        <div class="stat-item bg-white/5 p-4 rounded-2xl border border-white/5 hover:bg-white/10 transition-colors">
+                            <div class="text-3xl font-bold text-pink-400">1</div>
+                            <div class="text-xs text-slate-400 mt-1">project</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Line Chart -->
+                <div class="glass-card p-6 rounded-3xl">
+                    <h2 class="text-xl font-bold mb-6 flex items-center text-cyan-300">
+                        <i data-lucide="message-square" class="mr-2 w-5 h-5"></i> Tần Suất "Spam" Tin Nhắn
+                    </h2>
+                    <div class="h-64">
+                        <canvas id="bugChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Pie Chart -->
+                <div class="glass-card p-6 rounded-3xl md:col-span-2">
+                    <h2 class="text-xl font-bold mb-6 flex items-center text-yellow-300">
+                        <i data-lucide="pie-chart" class="mr-2 w-5 h-5"></i> Sự Thật Về Thời Gian
+                    </h2>
+                    <div class="flex flex-col md:flex-row items-center justify-center gap-8">
+                        <div class="h-64 w-full md:w-1/2 flex justify-center">
+                            <canvas id="timeChart"></canvas>
+                        </div>
+                        <div class="md:w-1/2 text-slate-300 italic text-sm border-l-2 border-cyan-500/30 pl-4 py-2">
+                            "Biểu đồ cho thấy 60% thời gian là để gemini, còn lại là để sửa cái lỗi do gemini chỉ bậy."
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. TIMELINE -->
+        <div id="timeline" class="tab-content hidden animate-fadeInUp">
+            <div class="relative max-w-3xl mx-auto pl-8 md:pl-0">
+                <!-- Vertical Line -->
+                <div class="absolute left-0 md:left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-cyan-500/50 to-transparent"></div>
+
+                <!-- Event 1 -->
+                <div class="relative mb-12 md:w-1/2 md:ml-auto md:pl-12 pl-8 group">
+                    <div class="absolute left-[-5px] md:left-[-5px] top-0 w-3 h-3 rounded-full bg-cyan-500 shadow-[0_0_15px_rgba(6,182,212,0.8)] z-10"></div>
+                    <div class="glass-card p-5 rounded-xl border border-cyan-500/20 hover:border-cyan-500/50 transition-all">
+                        <div class="text-cyan-400 text-xs font-mono mb-2">2 Tháng Trước</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Khởi Tạo (Init)</h3>
+                        <p class="text-slate-400 text-sm">Team được thành lập. Mọi người đều cười nói vui vẻ, chưa biết giông bão sắp tới.</p>
+                    </div>
+                </div>
+
+                <!-- Event 2 -->
+                <div class="relative mb-12 md:w-1/2 md:mr-auto md:pr-12 pl-8 md:pl-0 md:text-right group">
+                    <div class="absolute left-[-5px] md:right-[-5px] md:left-auto top-0 w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.8)] z-10"></div>
+                    <div class="glass-card p-5 rounded-xl border border-blue-500/20 hover:border-blue-500/50 transition-all">
+                        <div class="text-blue-400 text-xs font-mono mb-2">1 Tháng Trước</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Xung Đột (Conflict)</h3>
+                        <p class="text-slate-400 text-sm">Tranh cãi về framework. Kẻ đòi React, người thích Vue. Cuối cùng chốt Vanilla JS cho nhẹ.</p>
+                    </div>
+                </div>
+
+                <!-- Event 3 -->
+                <div class="relative md:w-1/2 md:ml-auto md:pl-12 pl-8 group">
+                    <div class="absolute left-[-5px] md:left-[-5px] top-0 w-3 h-3 rounded-full bg-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.8)] z-10 animate-pulse"></div>
+                    <div class="glass-card p-5 rounded-xl border border-pink-500/20 hover:border-pink-500/50 transition-all">
+                        <div class="text-pink-400 text-xs font-mono mb-2">Hiện Tại</div>
+                        <h3 class="text-lg font-bold text-white mb-2">Chạy Deadline</h3>
+                        <p class="text-slate-400 text-sm">Chế độ sinh tồn kích hoạt. Code chạy được là được, không cần đẹp.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. GALLERY -->
+        <div id="gallery" class="tab-content hidden animate-fadeInUp">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-white mb-2">Trước & Sau</h2>
+                <p class="text-cyan-200/60 font-light">Kéo thanh trượt để thấy sự tàn phá của Deadline.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Slider 1 -->
+                <div class="glass-card p-2 rounded-2xl comparison-container" id="slider1">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <h3 class="text-cyan-300 font-bold">Trưởng Nhóm</h3>
+                        <div class="flex gap-1">
+                            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                            <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        </div>
+                    </div>
+                    <div class="img-comp-wrapper h-72 rounded-xl overflow-hidden relative cursor-col-resize shadow-inner">
+                        <div class="img-comp-img img-after absolute inset-0 bg-slate-900 flex items-center justify-center">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=ZombieBoss&clothing=hoodie&eyes=dizzy&mouth=scream&skinColor=pale" class="object-cover w-full h-full opacity-90 grayscale contrast-125">
+                            <div class="absolute bottom-3 right-3 bg-black/70 text-red-400 text-xs px-2 py-1 rounded font-mono backdrop-blur-sm border border-red-500/30">Sau 2 tháng</div>
+                        </div>
+                        <div class="img-comp-img img-before absolute top-0 left-0 h-full overflow-hidden z-10 border-r-2 border-cyan-400 bg-slate-800">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Boss&clothing=blazerAndShirt&facialHair=beardLight" class="object-cover w-full h-full">
+                            <div class="absolute bottom-3 left-3 bg-black/70 text-cyan-400 text-xs px-2 py-1 rounded font-mono backdrop-blur-sm border border-cyan-500/30">Hồi mới vô</div>
+                        </div>
+                        <div class="slider-handle absolute top-0 bottom-0 w-10 h-10 bg-cyan-500 rounded-full z-20 flex items-center justify-center shadow-lg shadow-cyan-500/50 text-white -ml-5 mt-[140px] pointer-events-none">
+                            <i data-lucide="chevrons-left-right" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                 <!-- Slider 2 -->
+                 <div class="glass-card p-2 rounded-2xl comparison-container" id="slider2">
+                    <div class="flex items-center justify-between mb-3 px-2">
+                        <h3 class="text-purple-300 font-bold">Dev Frontend</h3>
+                        <div class="flex gap-1">
+                            <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                            <span class="w-2 h-2 rounded-full bg-yellow-500"></span>
+                            <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                        </div>
+                    </div>
+                    <div class="img-comp-wrapper h-72 rounded-xl overflow-hidden relative cursor-col-resize shadow-inner">
+                        <div class="img-comp-img img-after absolute inset-0 bg-slate-900 flex items-center justify-center">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=GirlTired&clothing=overall&eyes=cry&top=messyBun&skinColor=pale" class="object-cover w-full h-full opacity-90 grayscale contrast-125">
+                        </div>
+                        <div class="img-comp-img img-before absolute top-0 left-0 h-full overflow-hidden z-10 border-r-2 border-purple-400 bg-slate-800">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Girl&clothing=shirtScoopNeck" class="object-cover w-full h-full">
+                        </div>
+                        <div class="slider-handle absolute top-0 bottom-0 w-10 h-10 bg-purple-500 rounded-full z-20 flex items-center justify-center shadow-lg shadow-purple-500/50 text-white -ml-5 mt-[140px] pointer-events-none">
+                            <i data-lucide="chevrons-left-right" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. TOP WORDS -->
+        <div id="words" class="tab-content hidden animate-fadeInUp">
+            <div class="text-center mb-6">
+                <h2 class="text-3xl font-bold text-white mb-2">Hệ Sinh Thái Ngôn Ngữ</h2>
+                <p class="text-cyan-200/60 font-light">Những từ khóa "chiếm sóng" nhiều nhất trong 200 từ phổ biến.</p>
+            </div>
+
+            <!-- Khu vực Word Cloud (Dùng Canvas) -->
+            <div class="glass-panel rounded-3xl p-4 relative flex justify-center items-center overflow-hidden" style="min-height: 500px;">
+                <canvas id="word-cloud-canvas" class="w-full h-full"></canvas>
+                <!-- Loader -->
+                <div id="wc-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-black/20 backdrop-blur-sm z-10">
+                     <i data-lucide="loader-2" class="animate-spin text-cyan-400 w-10 h-10 mb-2"></i>
+                     <span class="text-cyan-200 text-sm font-mono">Đang phân tích dữ liệu...</span>
+                </div>
+            </div>
+
+            <!-- Bảng thống kê chi tiết (Top 3) -->
+            <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="glass-card p-4 rounded-xl flex items-center gap-4">
+                    <div class="bg-yellow-500/20 p-3 rounded-full text-yellow-400 font-bold text-xl border border-yellow-500/30">#1</div>
+                    <div>
+                        <div class="text-slate-400 text-xs uppercase font-mono">Top Trending</div>
+                        <div class="text-white font-bold text-lg" id="top-word-1">...</div>
+                    </div>
+                </div>
+                <div class="glass-card p-4 rounded-xl flex items-center gap-4">
+                    <div class="bg-cyan-500/20 p-3 rounded-full text-cyan-400 font-bold text-xl border border-cyan-500/30">#2</div>
+                    <div>
+                        <div class="text-slate-400 text-xs uppercase font-mono">Runner Up</div>
+                        <div class="text-white font-bold text-lg" id="top-word-2">...</div>
+                    </div>
+                </div>
+                <div class="glass-card p-4 rounded-xl flex items-center gap-4">
+                    <div class="bg-pink-500/20 p-3 rounded-full text-pink-400 font-bold text-xl border border-pink-500/30">#3</div>
+                    <div>
+                        <div class="text-slate-400 text-xs uppercase font-mono">Third Place</div>
+                        <div class="text-white font-bold text-lg" id="top-word-3">...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. ORACLE -->
+        <div id="oracle" class="tab-content hidden animate-fadeInUp">
+            <div class="flex flex-col items-center justify-center min-h-[400px]">
+                <div class="glass-card p-10 rounded-[2rem] max-w-lg w-full text-center relative overflow-hidden border border-cyan-500/30">
+                    <!-- Background Effects -->
+                    <div class="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl"></div>
+                    <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-cyan-500/20 rounded-full blur-3xl"></div>
+                    
+                    <div class="relative z-10">
+                        <div class="bg-gradient-to-br from-cyan-400 to-blue-600 w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg shadow-blue-500/30 rotate-3 hover:rotate-6 transition-transform">
+                            <i data-lucide="sparkles" class="w-10 h-10 text-white"></i>
+                        </div>
+                        
+                        <h2 class="text-2xl font-bold text-white mb-2">Thông Điệp Vũ Trụ</h2>
+                        <p class="text-cyan-200/60 mb-8 text-sm">Hãy tập trung suy nghĩ về đồ án và nhấn nút.</p>
+                        
+                        <div class="min-h-[120px] flex items-center justify-center mb-8 p-6 bg-black/20 rounded-xl border border-white/5 backdrop-blur-sm">
+                            <p id="prophecy-text" class="text-xl font-mono text-cyan-300 leading-relaxed italic">"Chưa có tín hiệu..."</p>
+                        </div>
+                        
+                        <button id="prophecy-btn" class="w-full py-4 rounded-xl font-bold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/25 flex items-center justify-center gap-2 group">
+                            <span>Kết Nối Server Tổ Tiên</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="text-center text-cyan-200/40 text-sm font-mono pb-8">
+        <p>Built with <span class="text-red-400">♥</span> & <span class="text-yellow-400">Matcha latte</span></p>
+    </footer>
+
+    <!-- LOGIC JS -->
+    <script src="script.js"></script>
+    <script src="audio-player.js"></script>
+</body>
+</html>
