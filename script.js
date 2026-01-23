@@ -38,6 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initOracle();
     initMessageBottles(); 
     initLuckyWheel();
+    initGoldenAwards();
+    initGameCenter();
     consoleEasterEgg();
 });
 
@@ -1342,6 +1344,607 @@ function initLuckyWheel() {
     closeBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
     parseItems();
+}
+
+
+// --- 12. LỄ TRAO GIẢI MÂM XÔI VÀNG (GOLDEN BUG AWARDS) ---
+function initGoldenAwards() {
+    // 1. DỮ LIỆU: DANH SÁCH GIẢI THƯỞNG & NGƯỜI THẮNG
+    // Bạn hãy sửa tên và lý do ở đây cho đúng với nhóm bạn nhé!
+    const awards = [
+        {
+            title: "CHĂM CHỈ NHẤT NĂM",
+            winner: "QUỲNH ANH", 
+            desc: "Thành tích: Luôn là người đầu tiên có mặt trong mọi buổi họp, chuẩn bị bài vở, đầy đủ.",
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" 
+        },
+        {
+            title: "BÁ ĐẠO NHẤT NĂM",
+            winner: "THANK NGHÍA",
+            desc: "Thành tích: Tổng tài chăm chỉ nhưng gia trưởng, cả nhóm phải nghe lời",
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka"
+        },
+        {
+            title: "LEADER TOÀN NĂNG",
+            winner: "NGỌC TUYỀN",
+            desc: "Thành tích: Luôn là người đứng mũi chịu sào, gánh team trong mọi dự án.",
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Precious"
+        },
+        {
+            title: "TRÂU BÒ NHẤT NĂM",
+            winner: "HOÀNG KHA",
+            desc: "Thành tích: Siêng làm những việc không nên siêng",
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Brian"
+        },
+        {
+            title: "IDEA CỦA NĂM",
+            winner: "TRIÊM ĐOÀN",
+            desc: "Thành tích: Luôn có những ý tưởng đột phá, táo bạo, đôi khi hơi... điên.",
+            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Ghost"
+        }
+    ];
+
+    // Âm thanh vỗ tay (Nguồn ổn định từ Wikimedia)
+    const clapAudio = new Audio("https://upload.wikimedia.org/wikipedia/commons/3/3a/Applause_mono_24bit_48kHz.wav");
+    const drumAudio = new Audio("https://upload.wikimedia.org/wikipedia/commons/7/75/Drum_roll.ogg"); // Tiếng trống dồn
+
+    let currentSlide = -1; // -1 là màn hình chờ
+
+    // 2. INJECT CSS (SÂN KHẤU HOÀNH TRÁNG)
+    const styleId = 'awards-style';
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            /* Nút kích hoạt (Hình cái cúp) */
+            #awards-trigger {
+                position: fixed; bottom: 20px; left: 90px; /* Nằm cạnh nút Vòng quay */
+                width: 60px; height: 60px;
+                background: linear-gradient(135deg, #facc15, #ca8a04);
+                border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                cursor: pointer; box-shadow: 0 0 25px rgba(250, 204, 21, 0.6); z-index: 999;
+                border: 3px solid rgba(255,255,255,0.2); transition: transform 0.3s;
+            }
+            #awards-trigger:hover { transform: scale(1.15) rotate(-10deg); }
+
+            /* Sân khấu chính */
+            #awards-stage {
+                position: fixed; inset: 0;
+                background: radial-gradient(circle at center, #1e1b4b 0%, #020617 80%);
+                z-index: 3000; /* Cao nhất */
+                display: none; flex-direction: column; align-items: center; justify-content: center;
+                overflow: hidden;
+            }
+            #awards-stage.active { display: flex; animation: fadeStageIn 1s ease; }
+
+            /* Hiệu ứng đèn Spotlight */
+            .spotlight-beam {
+                position: absolute; top: -20%; left: 50%;
+                width: 200px; height: 100vh;
+                background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
+                transform-origin: top center;
+                filter: blur(20px);
+                animation: spotlightSwing 8s infinite ease-in-out alternate;
+                pointer-events: none;
+            }
+            .spotlight-left { left: 20%; animation-delay: -2s; transform: rotate(15deg); }
+            .spotlight-right { left: 80%; animation-delay: -4s; transform: rotate(-15deg); }
+
+            /* Nội dung giải thưởng */
+            .award-content {
+                text-align: center; z-index: 10;
+                max-width: 800px; padding: 20px;
+                transform: scale(0.9); opacity: 0;
+                transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            .award-content.show { transform: scale(1); opacity: 1; }
+
+            .award-category {
+                font-family: 'Outfit', sans-serif;
+                font-size: 1.5rem; letter-spacing: 4px;
+                color: #facc15; text-transform: uppercase;
+                margin-bottom: 1rem; text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+            }
+
+            .award-title {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 3.5rem; font-weight: 800;
+                background: linear-gradient(to bottom, #ffffff, #94a3b8);
+                -webkit-background-clip: text; color: transparent;
+                margin-bottom: 2rem;
+                text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                line-height: 1.2;
+            }
+
+            .winner-reveal-box {
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 20px; padding: 3rem;
+                backdrop-filter: blur(10px);
+                box-shadow: 0 0 50px rgba(250, 204, 21, 0.1);
+                display: none; flex-direction: column; align-items: center;
+                animation: zoomIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+            .winner-reveal-box.revealed { display: flex; }
+
+            .winner-avatar {
+                width: 150px; height: 150px; border-radius: 50%;
+                border: 4px solid #facc15;
+                box-shadow: 0 0 30px rgba(250, 204, 21, 0.6);
+                margin-bottom: 1.5rem; object-fit: cover;
+                background: #0f172a;
+            }
+
+            .winner-name {
+                font-size: 2.5rem; font-weight: bold; color: white;
+                margin-bottom: 0.5rem;
+            }
+
+            .winner-desc {
+                font-size: 1.1rem; color: #cbd5e1; font-style: italic;
+            }
+
+            /* Màn hình chờ */
+            .intro-screen {
+                text-align: center;
+                animation: pulse 2s infinite;
+            }
+            .intro-title {
+                font-size: 4rem; font-weight: 900; color: #facc15;
+                text-shadow: 0 0 50px rgba(250, 204, 21, 0.8);
+                margin-bottom: 1rem;
+            }
+
+            /* Controls */
+            .stage-controls {
+                position: absolute; bottom: 30px;
+                display: flex; gap: 20px;
+            }
+            .stage-btn {
+                padding: 10px 20px; background: rgba(255,255,255,0.1);
+                border: 1px solid rgba(255,255,255,0.2); color: white;
+                border-radius: 30px; cursor: pointer; transition: all 0.3s;
+                font-family: 'Outfit', sans-serif; text-transform: uppercase; font-size: 0.8rem;
+            }
+            .stage-btn:hover { background: white; color: black; }
+            .stage-btn.primary { background: #facc15; color: black; font-weight: bold; border: none; }
+            .stage-btn.primary:hover { box-shadow: 0 0 20px #facc15; }
+
+            .close-stage {
+                position: absolute; top: 20px; right: 20px;
+                color: #64748b; cursor: pointer; padding: 10px;
+            }
+            .close-stage:hover { color: white; }
+
+            @keyframes spotlightSwing {
+                0% { transform: rotate(10deg) scaleX(1); opacity: 0.5; }
+                100% { transform: rotate(-10deg) scaleX(1.2); opacity: 0.8; }
+            }
+            @keyframes fadeStageIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes zoomIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 3. INJECT HTML
+    if (!document.getElementById('awards-stage')) {
+        const html = `
+            <div id="awards-trigger" title="Lễ Trao Giải">
+                <i data-lucide="trophy" class="text-white w-8 h-8"></i>
+            </div>
+
+            <div id="awards-stage">
+                <div class="close-stage"><i data-lucide="x" class="w-10 h-10"></i></div>
+                
+                <!-- Background Lights -->
+                <div class="spotlight-beam spotlight-left"></div>
+                <div class="spotlight-beam spotlight-center"></div>
+                <div class="spotlight-beam spotlight-right"></div>
+
+                <!-- Intro Screen -->
+                <div id="intro-screen" class="intro-screen">
+                    <div class="intro-title">THE GOLDEN BUG<br>AWARDS 2024</div>
+                    <p class="text-xl text-slate-300">Chào mừng đến với đêm vinh danh những sai lầm...</p>
+                    <p class="text-sm text-slate-500 mt-4">(Nhấn 'Bắt đầu' hoặc phím Mũi tên phải)</p>
+                </div>
+
+                <!-- Award Content -->
+                <div id="award-container" class="award-content" style="display: none;">
+                    <div class="award-category">Hạng Mục</div>
+                    <div id="award-title" class="award-title">Loading...</div>
+                    
+                    <div id="winner-box" class="winner-reveal-box">
+                        <img id="winner-img" src="" class="winner-avatar" alt="Winner">
+                        <div id="winner-name" class="winner-name">???</div>
+                        <div id="winner-desc" class="winner-desc">...</div>
+                    </div>
+                </div>
+
+                <div class="stage-controls">
+                    <button id="prev-slide" class="stage-btn">Previous</button>
+                    <button id="next-slide" class="stage-btn primary">Next / Reveal</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', html);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // 4. LOGIC ĐIỀU KHIỂN
+    const stage = document.getElementById('awards-stage');
+    const introScreen = document.getElementById('intro-screen');
+    const awardContainer = document.getElementById('award-container');
+    const awardTitle = document.getElementById('award-title');
+    const winnerBox = document.getElementById('winner-box');
+    const winnerName = document.getElementById('winner-name');
+    const winnerImg = document.getElementById('winner-img');
+    const winnerDesc = document.getElementById('winner-desc');
+    const nextBtn = document.getElementById('next-slide');
+    const prevBtn = document.getElementById('prev-slide');
+    const triggerBtn = document.getElementById('awards-trigger');
+    const closeBtn = document.querySelector('.close-stage');
+
+    let state = 'intro'; // intro -> title -> winner
+    
+    // Mở sân khấu
+    triggerBtn.addEventListener('click', () => {
+        stage.classList.add('active');
+        resetShow();
+    });
+
+    // Đóng sân khấu
+    closeBtn.addEventListener('click', () => {
+        stage.classList.remove('active');
+    });
+
+    const resetShow = () => {
+        currentSlide = -1;
+        state = 'intro';
+        introScreen.style.display = 'block';
+        awardContainer.style.display = 'none';
+        nextBtn.innerText = "Bắt đầu";
+    };
+
+    const showAwardTitle = (index) => {
+        state = 'title';
+        introScreen.style.display = 'none';
+        awardContainer.style.display = 'block';
+        winnerBox.classList.remove('revealed'); // Ẩn người thắng
+        awardContainer.classList.remove('show');
+        
+        // Cập nhật nội dung
+        awardTitle.innerText = awards[index].title;
+        
+        // Hiệu ứng Fade In
+        setTimeout(() => awardContainer.classList.add('show'), 50);
+        
+        // Âm thanh trống dồn (Tạo kịch tính)
+        drumAudio.currentTime = 0;
+        drumAudio.play().catch(() => {});
+        
+        nextBtn.innerText = "Công bố người thắng";
+    };
+
+    const revealWinner = (index) => {
+        state = 'winner';
+        const data = awards[index];
+        
+        winnerName.innerText = data.winner;
+        winnerDesc.innerText = `"${data.desc}"`;
+        winnerImg.src = data.avatar;
+        
+        winnerBox.classList.add('revealed');
+        
+        // Dừng trống, phát tiếng vỗ tay
+        drumAudio.pause();
+        clapAudio.currentTime = 0;
+        clapAudio.play().catch(() => {});
+
+        // Bắn pháo hoa tưng bừng
+        if (window.confetti) {
+            var end = Date.now() + 1000;
+            (function frame() {
+                confetti({
+                    particleCount: 5,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0 },
+                    colors: ['#facc15', '#ffffff'] // Vàng Gold
+                });
+                confetti({
+                    particleCount: 5,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1 },
+                    colors: ['#facc15', '#ffffff']
+                });
+                if (Date.now() < end) requestAnimationFrame(frame);
+            }());
+        }
+
+        nextBtn.innerText = "Giải tiếp theo >>";
+    };
+
+    // Nút Next (Logic chính)
+    const handleNext = () => {
+        if (state === 'intro') {
+            currentSlide = 0;
+            showAwardTitle(currentSlide);
+        } else if (state === 'title') {
+            revealWinner(currentSlide);
+        } else if (state === 'winner') {
+            currentSlide++;
+            if (currentSlide < awards.length) {
+                showAwardTitle(currentSlide);
+            } else {
+                alert("Hết giải rồi! Đi nhậu thôi!");
+                stage.classList.remove('active');
+            }
+        }
+    };
+
+    const handlePrev = () => {
+        if (state === 'winner') {
+            // Quay lại chỉ hiện title
+            showAwardTitle(currentSlide);
+        } else if (state === 'title') {
+            currentSlide--;
+            if (currentSlide >= 0) {
+                // Quay lại người thắng của giải trước
+                showAwardTitle(currentSlide); // Hack xíu: hiện title trước rồi hiện winner sau cũng được
+                revealWinner(currentSlide);
+            } else {
+                resetShow();
+            }
+        }
+    };
+
+    nextBtn.addEventListener('click', handleNext);
+    prevBtn.addEventListener('click', handlePrev);
+
+    // Hỗ trợ phím mũi tên (Cho MC chuyên nghiệp)
+    document.addEventListener('keydown', (e) => {
+        if (!stage.classList.contains('active')) return;
+        if (e.key === 'ArrowRight' || e.key === ' ') handleNext();
+        if (e.key === 'ArrowLeft') handlePrev();
+        if (e.key === 'Escape') stage.classList.remove('active');
+    });
+}
+
+// --- 13. TRUNG TÂM GIẢI TRÍ (GAME CENTER) ---
+function initGameCenter() {
+    // 1. INJECT CSS
+    const styleId = 'game-center-style';
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            /* Nút kích hoạt (Tay cầm Game) */
+            #game-trigger {
+                position: fixed; bottom: 20px; left: 160px; /* Xếp sau Cúp vàng */
+                width: 60px; height: 60px;
+                background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+                border-radius: 50%; display: flex; align-items: center; justify-content: center;
+                cursor: pointer; box-shadow: 0 0 25px rgba(139, 92, 246, 0.6); z-index: 999;
+                border: 3px solid rgba(255,255,255,0.2); transition: transform 0.3s;
+            }
+            #game-trigger:hover { transform: scale(1.15) rotate(15deg); }
+
+            /* Modal Game Center */
+            #game-modal {
+                position: fixed; inset: 0;
+                background: rgba(2, 6, 23, 0.95);
+                backdrop-filter: blur(20px);
+                z-index: 4000; /* Cao nhất */
+                display: none; flex-direction: column; align-items: center; justify-content: center;
+                opacity: 0; transition: opacity 0.4s ease;
+            }
+            #game-modal.open { display: flex; opacity: 1; }
+
+            /* Tiêu đề */
+            .game-center-title {
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 3rem; font-weight: 900;
+                text-transform: uppercase; letter-spacing: 5px;
+                background: linear-gradient(to right, #c084fc, #22d3ee);
+                -webkit-background-clip: text; color: transparent;
+                margin-bottom: 3rem; text-shadow: 0 0 30px rgba(192, 132, 252, 0.5);
+                text-align: center;
+            }
+
+            /* Container thẻ game */
+            .game-cards-container {
+                display: flex; gap: 30px; flex-wrap: wrap; justify-content: center;
+                width: 90%; max-width: 1200px;
+            }
+
+            /* Thẻ Game (Card) */
+            .game-card {
+                position: relative; width: 300px; height: 420px;
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 20px; overflow: hidden;
+                transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                cursor: pointer;
+                display: flex; flex-direction: column;
+            }
+            
+            .game-card:hover {
+                transform: translateY(-10px) scale(1.02);
+                border-color: var(--theme-color);
+                box-shadow: 0 20px 50px -10px var(--shadow-color);
+            }
+
+            /* Ảnh minh họa game (Placeholder) */
+            .game-thumb {
+                height: 180px; width: 100%;
+                background: var(--bg-gradient);
+                display: flex; align-items: center; justify-content: center;
+                color: white; font-size: 4rem;
+            }
+
+            .game-info {
+                padding: 20px; flex-grow: 1; display: flex; flex-direction: column;
+            }
+
+            .game-title {
+                font-size: 1.5rem; font-weight: bold; color: white; margin-bottom: 10px;
+                font-family: 'Outfit', sans-serif;
+            }
+
+            .game-desc {
+                font-size: 0.9rem; color: #94a3b8; line-height: 1.5; margin-bottom: 20px;
+                flex-grow: 1;
+            }
+
+            .play-btn {
+                padding: 12px; width: 100%;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid var(--theme-color);
+                color: var(--theme-color);
+                border-radius: 10px; font-weight: bold; text-transform: uppercase;
+                transition: all 0.3s;
+            }
+            .game-card:hover .play-btn {
+                background: var(--theme-color);
+                color: #0f172a;
+                box-shadow: 0 0 20px var(--shadow-color);
+            }
+
+            /* Themes màu cho từng game */
+            .theme-survival { --theme-color: #10b981; --shadow-color: rgba(16, 185, 129, 0.4); --bg-gradient: linear-gradient(135deg, #064e3b, #10b981); }
+            .theme-casino { --theme-color: #f59e0b; --shadow-color: rgba(245, 158, 11, 0.4); --bg-gradient: linear-gradient(135deg, #78350f, #f59e0b); }
+            .theme-monopoly { --theme-color: #3b82f6; --shadow-color: rgba(59, 130, 246, 0.4); --bg-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6); }
+
+            .close-game {
+                position: absolute; top: 30px; right: 30px;
+                color: #64748b; cursor: pointer; padding: 10px;
+                transition: color 0.2s;
+            }
+            .close-game:hover { color: white; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // 2. INJECT HTML
+    if (!document.getElementById('game-modal')) {
+        const html = `
+            <div id="game-trigger" title="Game Center">
+                <i data-lucide="gamepad-2" class="text-white w-8 h-8"></i>
+            </div>
+
+            <div id="game-modal">
+                <div class="close-game"><i data-lucide="x" class="w-10 h-10"></i></div>
+                <h2 class="game-center-title">Arcade Zone</h2>
+                
+                <div class="game-cards-container">
+                    
+                    <!-- Game 1: Đảo Hoang -->
+                    <div class="game-card theme-survival" onclick="selectGame('survival')">
+                        <div class="game-thumb"><i data-lucide="tent-tree"></i></div>
+                        <div class="game-info">
+                            <h3 class="game-title">Đại Chiến Đảo Hoang</h3>
+                            <p class="game-desc">Mô phỏng sinh tồn cực bựa. Drama, phản bội và những cái chết lãng xẹt đang chờ đợi.</p>
+                            <button class="play-btn">Bắt đầu</button>
+                        </div>
+                    </div>
+
+                    <!-- Game 2: Sòng Bài -->
+                    <div class="game-card theme-casino" onclick="selectGame('casino')">
+                        <div class="game-thumb"><i data-lucide="dices"></i></div>
+                        <div class="game-info">
+                            <h3 class="game-title">Sòng Bài Hoàng Gia</h3>
+                            <p class="game-desc">Đua ngựa, Tài xỉu, Bầu cua. Nơi tình bạn rạn nứt vì tiền ảo.</p>
+                            <button class="play-btn">Vào Sòng</button>
+                        </div>
+                    </div>
+
+                    <!-- Game 3: Cờ Tỷ Phú -->
+                    <div class="game-card theme-monopoly" onclick="selectGame('monopoly')">
+                        <div class="game-thumb"><i data-lucide="landmark"></i></div>
+                        <div class="game-info">
+                            <h3 class="game-title">Cờ Tỷ Phú Tốc Độ</h3>
+                            <p class="game-desc">Mua đất, xây nhà, thu tiền phạt. Ai sẽ là đại gia bất động sản?</p>
+                            <button class="play-btn">Gieo Xúc Xắc</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', html);
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    // 3. LOGIC ĐIỀU KHIỂN
+    const modal = document.getElementById('game-modal');
+    const trigger = document.getElementById('game-trigger');
+    const closeBtn = document.querySelector('.close-game');
+
+    // Mở Game Center
+    trigger.addEventListener('click', () => {
+        modal.classList.add('open');
+    });
+
+    // Đóng Game Center
+    closeBtn.addEventListener('click', () => {
+        modal.classList.remove('open');
+    });
+
+    // Hàm chọn game (Hiện tại chỉ thông báo)
+    window.selectGame = function(gameType) {
+        if (gameType === 'survival') {
+            // Danh sách thành viên nhóm của bạn
+            const teamNames = ["Minh", "Hùng", "Lan", "Tuấn", "Hoàng"];
+            
+            // 1. Kiểm tra xem script đã load chưa
+            if (typeof SurvivalGame !== 'undefined') {
+                runSurvival();
+            } else {
+                // Nếu chưa load file js thì load động
+                const script = document.createElement('script');
+                script.src = 'games/survival-game.js';
+                script.onload = runSurvival;
+                document.head.appendChild(script);
+            }
+
+            function runSurvival() {
+                // ĐÚNG THEO CÁCH SỬ DỤNG BẠN YÊU CẦU:
+                const game = new SurvivalGame(teamNames);
+                window.survivalGame = game; // Lưu vào global để các nút trong game hoạt động
+                
+                // Mở Modal và khởi tạo giao diện game
+                modal.classList.add('open');
+                game.init(); 
+            }
+        } if (gameType === 'monopoly') {
+            // Danh sách thành viên nhóm của bạn
+            const teamNames = ["Minh", "Hùng", "Lan", "Tuấn", "Hoàng"];
+            
+            // 1. Kiểm tra xem script đã load chưa
+            if (typeof MonopolyGameGame !== 'undefined') {
+                runMonopolyGame();
+            } else {
+                // Nếu chưa load file js thì load động
+                const script = document.createElement('script');
+                script.src = 'games/cotiphu.js';
+                script.onload = runMonopolyGame;
+                document.head.appendChild(script);
+            }
+
+            function runMonopolyGame() {
+                // ĐÚNG THEO CÁCH SỬ DỤNG BẠN YÊU CẦU:
+                const game = new MonopolyGame(teamNames);
+                window.MonopolyGameGame = game; // Lưu vào global để các nút trong game hoạt động
+                
+                // Mở Modal và khởi tạo giao diện game
+                modal.classList.add('open');
+                game.init(); 
+            }
+        }else {
+            alert("Trò chơi này đang được phát triển!");
+        }
+    };
 }
 
 
