@@ -35,6 +35,7 @@ class MonopolyCore {
         // Callback cập nhật UI
         this.onUpdate = null;
         this.onEvent = null; // Callback khi có sự kiện cần người chơi tương tác (Mua đất, Trả tiền...)
+        this.uiRef = null; 
     }
 
     getPlayerColor(index) {
@@ -84,40 +85,49 @@ class MonopolyCore {
         return total;
     }
 
-    movePlayer(steps) {
+    async movePlayerStepByStep(steps) {
         const player = this.getCurrentPlayer();
         
-        // Nếu ở tù
+        // Check tù
         if (player.isJailed > 0) {
             player.isJailed--;
-            this.log(`${player.name} đang trong phòng thi. Còn ${player.isJailed} lượt.`);
+            this.log(`${player.name} đang thi lại. Còn ${player.isJailed} lượt.`);
+            if(this.uiRef) this.uiRef.showToast(`${player.name} đang thi lại!`, 'danger');
             this.nextTurn();
             return;
         }
 
-        // Logic Sudden Death: Phí bôi trơn
+        // Sudden Death cost
         const phase = this.getCurrentPhase();
         if (phase.moveCost) {
             player.money -= (phase.moveCost * steps);
-            this.log(`Phí bôi trơn di chuyển: -$${phase.moveCost * steps}`);
+            this.log(`Phí bôi trơn: -$${phase.moveCost * steps}`);
             if (player.money < 0) return this.handleBankruptcy(player);
         }
 
-        // Di chuyển
-        const oldPos = player.position;
-        player.position = (player.position + steps) % 24;
+        // Di chuyển từng ô
+        let stepsLeft = steps;
+        // Hàm đệ quy hoặc loop với Promise delay
+        for (let i = 0; i < steps; i++) {
+            const oldPos = player.position;
+            player.position = (player.position + 1) % 24;
+            
+            // Check qua cổng trường
+            if (player.position === 0) {
+                player.money += window.MonopolyData.CONFIG.PASS_GO_REWARD;
+                this.log(`Qua Cổng Trường: +$${window.MonopolyData.CONFIG.PASS_GO_REWARD}`);
+                if(this.uiRef) this.uiRef.showToast(`Nhận lương +$${window.MonopolyData.CONFIG.PASS_GO_REWARD}`, 'success');
+            }
 
-        // Đi lùi (xử lý số âm)
-        if (player.position < 0) player.position += 24;
-
-        // Qua cổng trường (Start)
-        if (player.position < oldPos && steps > 0) {
-            player.money += window.MonopolyData.CONFIG.PASS_GO_REWARD;
-            this.log(`${player.name} đi qua Cổng Trường. Nhận lương $${window.MonopolyData.CONFIG.PASS_GO_REWARD}.`);
+            // Cập nhật UI ngay lập tức để thấy token nhảy
+            if (this.onUpdate) this.onUpdate();
+            
+            // Chờ 200ms trước khi nhảy bước tiếp theo
+            await new Promise(r => setTimeout(r, 200));
         }
 
-        // Xử lý ô đất vừa đến
-        setTimeout(() => this.handleTile(player.position), 500); // Delay chút cho UI chạy
+        // Đã đến nơi
+        setTimeout(() => this.handleTile(player.position), 300);
     }
 
     handleTile(pos) {
@@ -136,18 +146,15 @@ class MonopolyCore {
 
             case 'LAND':
                 if (!tile.owner) {
-                    // Đất trống -> Mua
                     if (this.onEvent) this.onEvent('BUY_LAND', { player, tile });
                 } else if (tile.owner === player.id) {
-                    // Đất của mình -> Nâng cấp
                     if (tile.level < phase.maxLevel) {
                         if (this.onEvent) this.onEvent('UPGRADE_LAND', { player, tile });
                     } else {
-                        this.log("Nhà đã Max cấp. Chill thôi.");
+                        this.log(`Nhà ${tile.name} đã Max cấp. Chill thôi.`);
                         this.nextTurn();
                     }
                 } else {
-                    // Đất người khác -> Trả tiền
                     this.payRent(player, tile);
                 }
                 break;
@@ -211,11 +218,12 @@ class MonopolyCore {
         const owner = this.players[tile.owner];
         const phase = this.getCurrentPhase();
         
-        // Công thức tiền phạt: Base * 2^(level-1) * Multiplier
-        let rent = tile.baseRent * Math.pow(2, tile.level - 1) * phase.multiplier;
+        // LOGIC MỚI: Lấy tiền phạt từ mảng levels
+        const levelData = tile.levels[tile.level];
+        let rent = levelData.rent * phase.multiplier;
         rent = Math.floor(rent);
 
-        this.log(`${player.name} phải trả $${rent} tiền thuê cho ${owner.name}.`);
+        this.log(`${player.name} vào ${tile.name} (${levelData.name}). Phạt: $${rent}.`);
         
         player.money -= rent;
         owner.money += rent;

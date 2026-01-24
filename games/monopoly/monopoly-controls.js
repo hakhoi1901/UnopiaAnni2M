@@ -1,40 +1,41 @@
 /**
- * MODULE 4: ĐIỀU KHIỂN & SỰ KIỆN (EVENTS)
- * Kết nối UI và Logic game.
+ * MODULE 4: ĐIỀU KHIỂN & SỰ KIỆN (CONTROLS) - ASYNC SUPPORT
+ * Kết nối UI, Logic và truyền tham chiếu UI vào Core.
  */
 
 function initMonopolyGame() {
     const modal = document.getElementById('game-modal');
     modal.classList.add('open');
 
-    // 1. Khởi tạo
-    // Giả lập lấy tên từ hệ thống chính hoặc dùng tên mặc định
-    const playerNames = ["Trưởng Nhóm", "Dev Frontend", "Dev Backend", "Tester"];
+    // Tên thành viên
+    const playerNames = ["Tuyền", "Nghĩa", "Khôi", "QAnh", "Triêm"];
     
     window.monopolyGame = new MonopolyCore(playerNames);
     const ui = new MonopolyUI(window.monopolyGame);
     
-    // 2. Setup Giao diện
+    // TRUYỀN UI VÀO CORE ĐỂ GỌI TOAST
+    window.monopolyGame.uiRef = ui;
+    
     ui.init();
 
-    // 3. Kết nối Callback từ Core sang UI
     window.monopolyGame.onUpdate = () => {
         ui.update(window.monopolyGame);
     };
 
     window.monopolyGame.onEvent = (type, data) => {
         if (type === 'BUY_LAND') {
-            ui.showActionModal(
-                "CƠ HỘI ĐẦU TƯ", 
-                `Bạn muốn mua <b>${data.tile.name}</b> với giá <span class="text-emerald-400">$${data.tile.price}</span> không?`,
-                () => window.monopolyGame.buyProperty(data.player, data.tile), // Yes
-                () => window.monopolyGame.nextTurn() // No
+            ui.showPropertyModal(
+                'BUY',
+                data.tile,
+                data.player,
+                () => window.monopolyGame.buyProperty(data.player, data.tile),
+                () => window.monopolyGame.nextTurn()
             );
         } else if (type === 'UPGRADE_LAND') {
-            const cost = Math.floor(data.tile.price * 0.5);
-            ui.showActionModal(
-                "NÂNG CẤP NHÀ",
-                `Nâng cấp <b>${data.tile.name}</b> lên cấp ${data.tile.level + 1}? Giá: <span class="text-amber-400">$${cost}</span>`,
+            ui.showPropertyModal(
+                'UPGRADE',
+                data.tile,
+                data.player,
                 () => window.monopolyGame.upgradeProperty(data.player, data.tile),
                 () => window.monopolyGame.nextTurn()
             );
@@ -43,45 +44,46 @@ function initMonopolyGame() {
         }
     };
 
-    // 4. Bắt sự kiện nút bấm
     const rollBtn = document.getElementById('roll-btn');
     rollBtn.addEventListener('click', () => {
-        // Disable nút để tránh spam
         rollBtn.disabled = true;
         rollBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        rollBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin"></i> Đang gieo...';
+        if(window.lucide) window.lucide.createIcons();
         
-        // Hiệu ứng đổ xí ngầu giả (Animation)
         let count = 0;
         const rollAnim = setInterval(() => {
             const d1 = Math.floor(Math.random() * 6) + 1;
             const d2 = Math.floor(Math.random() * 6) + 1;
-            document.querySelectorAll('.dice')[0].innerText = d1;
-            document.querySelectorAll('.dice')[1].innerText = d2;
+            ui.rotateDice('dice-1', d1);
+            ui.rotateDice('dice-2', d2);
+            
             count++;
-            if (count > 10) {
+            if (count > 12) {
                 clearInterval(rollAnim);
-                // Chạy logic thật
                 const steps = window.monopolyGame.rollDice();
+                
+                ui.rotateDice('dice-1', window.monopolyGame.diceResult[0]);
+                ui.rotateDice('dice-2', window.monopolyGame.diceResult[1]);
+
                 setTimeout(() => {
-                    window.monopolyGame.movePlayer(steps);
-                    // Enable lại nút sau khi xử lý xong (Logic nextTurn sẽ gọi update UI)
-                    rollBtn.disabled = false;
-                    rollBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    // GỌI HÀM DI CHUYỂN TỪNG BƯỚC (Async)
+                    window.monopolyGame.movePlayerStepByStep(steps).then(() => {
+                        rollBtn.disabled = false;
+                        rollBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        rollBtn.innerHTML = '<i data-lucide="dices"></i> Gieo Xúc Xắc';
+                        if(window.lucide) window.lucide.createIcons();
+                    });
                 }, 500);
             }
-        }, 100);
+        }, 80);
     });
 
-    // 5. Thêm nút đóng vào instance (để nút X trên header gọi được)
     window.monopolyGame.close = () => {
         clearInterval(window.monopolyGame.gameInterval);
         modal.classList.remove('open');
     };
 
-    // Start Timer
     window.monopolyGame.startGame();
-    ui.update(window.monopolyGame); // Render lần đầu
+    ui.update(window.monopolyGame);
 }
-
-// Cập nhật hàm selectGame trong script.js chính để gọi initMonopolyGame
-// (Bạn cần sửa file script.js chính: if (gameType === 'monopoly') initMonopolyGame();)
