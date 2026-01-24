@@ -1891,57 +1891,86 @@ function initGameCenter() {
         modal.classList.remove('open');
     });
 
-    // Hàm chọn game (Hiện tại chỉ thông báo)
     window.selectGame = function(gameType) {
+        
+        // ------------------------------------------------
+        // 1. GAME SINH TỒN (Survival) - File đơn
+        // ------------------------------------------------
         if (gameType === 'survival') {
-            // Danh sách thành viên nhóm của bạn
             const teamNames = ["Minh", "Hùng", "Lan", "Tuấn", "Hoàng"];
             
-            // 1. Kiểm tra xem script đã load chưa
+            // Hàm chạy game
+            const runSurvival = () => {
+                const game = new SurvivalGame(teamNames);
+                window.survivalGame = game; 
+                modal.classList.add('open');
+                game.init(); 
+            };
+
+            // Nếu class đã tồn tại (do code gộp trong script.js hoặc đã load trước đó)
             if (typeof SurvivalGame !== 'undefined') {
                 runSurvival();
             } else {
-                // Nếu chưa load file js thì load động
-                const script = document.createElement('script');
-                script.src = 'games/survival-game.js';
-                script.onload = runSurvival;
-                document.head.appendChild(script);
+                // Nếu chưa có, thử load từ file rời (nếu bạn vẫn dùng file rời)
+                // Lưu ý: Nếu bạn đã gộp code Survival vào script.js như turn trước thì không cần đoạn else này.
+                console.warn("SurvivalGame Class chưa được định nghĩa.");
             }
-
-            function runSurvival() {
-                // ĐÚNG THEO CÁCH SỬ DỤNG BẠN YÊU CẦU:
-                const game = new SurvivalGame(teamNames);
-                window.survivalGame = game; // Lưu vào global để các nút trong game hoạt động
-                
-                // Mở Modal và khởi tạo giao diện game
-                modal.classList.add('open');
-                game.init(); 
-            }
-        } if (gameType === 'monopoly') {
-            // Danh sách thành viên nhóm của bạn
-            const teamNames = ["Minh", "Hùng", "Lan", "Tuấn", "Hoàng"];
-            
-            // 1. Kiểm tra xem script đã load chưa
-            if (typeof MonopolyGameGame !== 'undefined') {
-                runMonopolyGame();
+        } 
+        
+        // ------------------------------------------------
+        // 2. GAME CỜ TỶ PHÚ (Monopoly) - 4 File rời
+        // ------------------------------------------------
+        else if (gameType === 'monopoly') {
+            // Kiểm tra xem hàm init đã có chưa
+            if (typeof initMonopolyGame === 'function') {
+                initMonopolyGame();
             } else {
-                // Nếu chưa load file js thì load động
-                const script = document.createElement('script');
-                script.src = 'games/cotiphu.js';
-                script.onload = runMonopolyGame;
-                document.head.appendChild(script);
-            }
+                // CHƯA CÓ -> LOAD 4 FILE THEO THỨ TỰ
+                // Data -> Core -> UI -> Controls
+                const folder = 'games/monopoly/';
+                const files = [
+                    'monopoly-data.js', 
+                    'monopoly-core.js', 
+                    'monopoly-ui.js', 
+                    'monopoly-controls.js'
+                ];
 
-            function runMonopolyGame() {
-                // ĐÚNG THEO CÁCH SỬ DỤNG BẠN YÊU CẦU:
-                const game = new MonopolyGame(teamNames);
-                window.MonopolyGameGame = game; // Lưu vào global để các nút trong game hoạt động
-                
-                // Mở Modal và khởi tạo giao diện game
-                modal.classList.add('open');
-                game.init(); 
+                // Hàm hỗ trợ load script trả về Promise
+                const loadScript = (filename) => {
+                    return new Promise((resolve, reject) => {
+                        const s = document.createElement('script');
+                        s.src = folder + filename;
+                        s.onload = () => {
+                            console.log(`Đã tải: ${filename}`);
+                            resolve();
+                        };
+                        s.onerror = () => reject(`Lỗi tải: ${filename}`);
+                        document.head.appendChild(s);
+                    });
+                };
+
+                // Chạy chuỗi Promise để load tuần tự
+                // Phải load Data xong mới load Core, v.v...
+                loadScript(files[0])
+                    .then(() => loadScript(files[1]))
+                    .then(() => loadScript(files[2]))
+                    .then(() => loadScript(files[3]))
+                    .then(() => {
+                        // Load xong hết mới chạy game
+                        if (typeof initMonopolyGame === 'function') {
+                            initMonopolyGame();
+                        } else {
+                            alert("Đã tải file nhưng không tìm thấy hàm khởi tạo!");
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("Không thể tải game. Kiểm tra lại đường dẫn thư mục 'games/monopoly/'");
+                    });
             }
-        }else {
+        } 
+        
+        else {
             alert("Trò chơi này đang được phát triển!");
         }
     };
