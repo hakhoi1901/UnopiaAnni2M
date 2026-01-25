@@ -122,12 +122,12 @@ class MonopolyCore {
             // Cập nhật UI ngay lập tức để thấy token nhảy
             if (this.onUpdate) this.onUpdate();
             
-            // Chờ 200ms trước khi nhảy bước tiếp theo
-            await new Promise(r => setTimeout(r, 200));
+            // Chờ 400ms trước khi nhảy bước tiếp theo
+            await new Promise(r => setTimeout(r, 400));
         }
 
         // Đã đến nơi
-        setTimeout(() => this.handleTile(player.position), 300);
+        setTimeout(() => this.handleTile(player.position), 1000);
     }
 
     handleTile(pos) {
@@ -234,62 +234,169 @@ class MonopolyCore {
 
     handleRandomEvent(type) {
         const events = window.MonopolyData.EVENTS;
-        const rand = Math.random();
         const player = this.getCurrentPlayer();
+        const phase = this.getCurrentPhase();
+        
+        // Random 0-100 để kiểm soát tỉ lệ
+        const roll = Math.floor(Math.random() * 100);
 
-        if (type === 'CHANCE') { // Cơ hội: Buff/Debuff cá nhân
-            if (rand > 0.5) {
-                // Vận đỏ
+        if (type === 'CHANCE') { // CƠ HỘI: Ảnh hưởng cá nhân
+            if (roll < 40) {
+                // --- 40%: NHẬN TIỀN (GOOD LUCK) ---
                 const text = events.GOOD_LUCK[Math.floor(Math.random() * events.GOOD_LUCK.length)];
-                const amt = 1000 + Math.floor(Math.random() * 2000);
-                player.money += amt;
-                this.log(`LUCK: ${text} (+$${amt})`);
-            } else {
-                // Vận đen
-                const subRand = Math.random();
-                if (subRand < 0.3) {
-                    const text = events.TO_JAIL[Math.floor(Math.random() * events.TO_JAIL.length)];
-                    this.log(`BAD: ${text}`);
-                    player.isJailed = 2;
-                    player.position = 18; // Move to Jail
+                // Tiền thưởng tăng theo lạm phát
+                const baseReward = 1000 + Math.floor(Math.random() * 2000); 
+                const finalReward = Math.floor(baseReward * phase.multiplier);
+                
+                player.money += finalReward;
+                this.log(`🍀 CƠ HỘI: ${text} (+$${finalReward})`, 'SUCCESS');
+                if(this.uiRef) this.uiRef.showToast(`+$${finalReward}: ${text}`, 'success');
+                this.nextTurn();
+                
+            } else if (roll < 70) {
+                // --- 30%: MẤT TIỀN (BAD LUCK - MONEY) ---
+                const lossPercent = 0.15;
+                let loss = 0;
+                let text = "Hỏng xe dọc đường, tốn tiền sửa!";
+                
+                if (player.money > 5000) {
+                    loss = Math.floor(player.money * lossPercent);
+                    text = `Xe hỏng, mất 15% tài sản`;
                 } else {
-                    const text = events.BAD_LUCK[Math.floor(Math.random() * events.BAD_LUCK.length)];
-                    this.log(`BAD: ${text}`);
-                    if (text.includes("Lùi")) {
-                        // Di chuyển lùi (đơn giản hóa)
-                        player.position = (player.position - 3 + 24) % 24; 
-                        // Không kích hoạt lại ô lùi vào để tránh loop
-                    }
+                    loss = 500 * phase.multiplier;
+                    text = `Đóng tiền quỹ lớp muộn`;
                 }
+                
+                player.money -= loss;
+                this.log(`💸 RỦI RO: ${text} (-$${loss}).`, 'DANGER');
+                if(this.uiRef) this.uiRef.showToast(`Mất -$${loss}: ${text}`, 'danger');
+                
+                this.checkBalance(player);
+                this.nextTurn();
+
+            } else if (roll < 90) {
+                // --- 20%: DI CHUYỂN (BAD LUCK - MOVE) ---
+                const text = events.BAD_LUCK[Math.floor(Math.random() * events.BAD_LUCK.length)];
+                
+                if (text.includes("Lùi") || roll % 2 === 0) {
+                    // Lùi 3 bước
+                    const steps = -3;
+                    player.position = (player.position + steps + 24) % 24; 
+                    
+                    this.log(`👣 RỦI RO: ${text} (Lùi 3 ô)`);
+                    if(this.uiRef) this.uiRef.showToast(`Lùi 3 bước!`, 'warning');
+                    
+                    // Cập nhật UI ngay
+                    if (this.onUpdate) this.onUpdate();
+
+                    // Xử lý ô đất mới
+                    // Chặn đệ quy nếu lùi vào ô Sự Kiện khác -> Dừng luôn để tránh loop
+                    const newTile = this.board[player.position];
+                    if (newTile.type !== 'CHANCE' && newTile.type !== 'LUCK') {
+                        setTimeout(() => this.handleTile(player.position), 800);
+                    } else {
+                        this.log(`...Lùi vào ô sự kiện nhưng được tha.`);
+                        this.nextTurn();
+                    }
+                } else {
+                    // Tiến thẳng tới Tù
+                    this.log(`👮 RỦI RO: Bị bắt gặp quay cóp! Vào tù ngay.`);
+                    if(this.uiRef) this.uiRef.showToast(`Vào Tù Ngay Lập Tức!`, 'danger');
+                    player.isJailed = 3; // Phạt 3 lượt
+                    player.position = 18; // Index của JAIL
+                    if (this.onUpdate) this.onUpdate();
+                    this.nextTurn();
+                }
+            } else {
+                // --- 10%: SỬA CHỮA (TAX PROPERTY) ---
+                let totalLevels = 0;
+                this.board.forEach(t => { if(t.owner === player.id) totalLevels += t.level; });
+                
+                if (totalLevels > 0) {
+                    const repairCost = Math.floor(totalLevels * 200 * phase.multiplier);
+                    player.money -= repairCost;
+                    this.log(`🛠️ CƠ HỘI: Bảo trì các khu trọ. Tốn $${repairCost}.`, 'WARNING');
+                    if(this.uiRef) this.uiRef.showToast(`Phí bảo trì -$${repairCost}`, 'warning');
+                    this.checkBalance(player);
+                } else {
+                    this.log(`🛠️ CƠ HỘI: Định bảo trì nhà nhưng bạn vô gia cư. May mắn!`, 'SUCCESS');
+                    if(this.uiRef) this.uiRef.showToast(`Thoát phí bảo trì`, 'success');
+                }
+                this.nextTurn();
             }
-        } else { // KHÍ VẬN: PVP
-            if (rand > 0.5) {
-                // Xin tiền (Communist)
+        } else { // TYPE: LUCK (KHÍ VẬN - TƯƠNG TÁC PVP)
+            if (roll < 40) {
+                // --- 40%: COMMUNIST (Lấy tiền mọi người) ---
                 const text = events.PVP_COMMUNIST[Math.floor(Math.random() * events.PVP_COMMUNIST.length)];
-                const amt = 500;
+                const amt = 500 * phase.multiplier;
                 let totalStolen = 0;
+                
                 this.players.forEach(p => {
                     if (p.id !== player.id && !p.isBankrupt) {
-                        p.money -= amt;
-                        totalStolen += amt;
+                        const steal = Math.min(p.money, amt);
+                        p.money -= steal;
+                        totalStolen += steal;
                     }
                 });
                 player.money += totalStolen;
-                this.log(`PVP: ${text} (Thu được $${totalStolen})`);
+                this.log(`😈 KHÍ VẬN: ${text} (Hút được $${totalStolen})`, 'SUCCESS');
+                if(this.uiRef) this.uiRef.showToast(`Hút máu: +$${totalStolen}`, 'success');
+
+            } else if (roll < 70) {
+                // --- 30%: ROB THE RICH (Cướp của người giàu) ---
+                // Tìm người giàu nhất
+                let richGuy = player;
+                this.players.forEach(p => {
+                    if (p.money > richGuy.money) richGuy = p;
+                });
+                
+                if (richGuy.id !== player.id && richGuy.money > 0) {
+                    const stealAmt = Math.floor(richGuy.money * 0.15); // Cướp 15%
+                    richGuy.money -= stealAmt;
+                    player.money += stealAmt;
+                    this.log(`🕵️ KHÍ VẬN: Bạn hack ví của đại gia ${richGuy.name}. +$${stealAmt}.`, 'SUCCESS');
+                    if(this.uiRef) this.uiRef.showToast(`Hack tiền đại gia: +$${stealAmt}`, 'success');
+                } else {
+                    this.log(`🤔 KHÍ VẬN: Bạn định cướp người giàu nhất nhưng đó lại là... chính bạn.`, 'INFO');
+                    if(this.uiRef) this.uiRef.showToast(`Bạn giàu nhất rồi!`, 'info');
+                }
+
+            } else if (roll < 90) {
+                // --- 20%: CHARITY (Từ thiện ngược - Đen) ---
+                const amtPerPerson = 300 * phase.multiplier;
+                let totalLost = 0;
+                this.players.forEach(p => {
+                    if (p.id !== player.id && !p.isBankrupt) {
+                        p.money += amtPerPerson;
+                        totalLost += amtPerPerson;
+                    }
+                });
+                player.money -= totalLost;
+                this.log(`💸 KHÍ VẬN: Bạn hứng chí bao cả lớp trà sữa. Bay màu $${totalLost}.`, 'DANGER');
+                if(this.uiRef) this.uiRef.showToast(`Bao cả lớp: -$${totalLost}`, 'danger');
+                this.checkBalance(player);
+
             } else {
-                // Ép mua đất (Giả lập đơn giản: Bán đất rác nhất của mình cho người giàu nhất)
-                const text = events.PVP_TRADE[Math.floor(Math.random() * events.PVP_TRADE.length)];
-                this.log(`PVP: ${text}`);
-                // Logic phức tạp này có thể code thêm sau, hiện tại trừ tiền tượng trưng
-                const richGuy = this.players.reduce((prev, current) => (prev.money > current.money) ? prev : current);
-                if (richGuy.id !== player.id) {
-                    richGuy.money -= 2000;
-                    player.money += 2000;
-                    this.log(`${player.name} trấn lột $2000 của đại gia ${richGuy.name}.`);
+                // --- 10%: SWAP (Hoán đổi vị trí - Chaos) ---
+                const targets = this.players.filter(p => p.id !== player.id && !p.isBankrupt);
+                if (targets.length > 0) {
+                    const target = targets[Math.floor(Math.random() * targets.length)];
+                    const tempPos = player.position;
+                    player.position = target.position;
+                    target.position = tempPos;
+                    
+                    this.log(`🌀 KHÍ VẬN: Sự cố không gian! Bạn và ${target.name} đổi chỗ.`, 'WARNING');
+                    if(this.uiRef) this.uiRef.showToast(`Hoán đổi với ${target.name}`, 'info');
+                    
+                    if (this.onUpdate) this.onUpdate();
+
+                    // Kích hoạt ô đất mới cho người chơi hiện tại sau delay
+                    setTimeout(() => this.handleTile(player.position), 800);
+                    return; // Return sớm để handleTile gọi nextTurn
                 }
             }
+            this.nextTurn();
         }
-        this.nextTurn();
     }
 
     checkBalance(player) {
