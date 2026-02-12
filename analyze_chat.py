@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 from collections import Counter
 from datetime import datetime
 
@@ -10,7 +11,7 @@ def analyze_chat_log(file_path):
     """
     # Xác định thư mục chứa file và tạo thư mục output
     base_dir = os.path.dirname(file_path)
-    output_dir = os.path.join(base_dir, 'analysis')
+    output_dir = base_dir
     
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -21,6 +22,19 @@ def analyze_chat_log(file_path):
         "user_stats": {},       # Lưu số tin nhắn và số từ của mỗi user
         "hourly_activity": Counter(), # Thống kê theo giờ trong ngày
         "daily_activity": Counter(),  # Thống kê theo ngày
+        "word_counts": Counter(),     # Thống kê tần suất từ
+    }
+
+    # Danh sách từ vô nghĩa (Stopwords) tiếng Việt và từ lóng chat
+    stopwords = {
+        "là", "và", "của", "thì", "mà", "có", "những", "cái", "được", "cho", "với", "không",
+        "trong", "trên", "tại", "đã", "đang", "sẽ", "về", "lại", "người", "khi", "như",
+        "nhưng", "rồi", "ra", "lên", "xuống", "đi", "đến", "để", "làm", "thấy", "biết",
+        "nói", "nghe", "nhìn", "muốn", "phải", "nên", "cũng", "rất", "quá", "lắm", "nhiều",
+        "tin", "nhắn", "bày", "tỏ", "xúc", "cảm", "nó", "đó", "ko",
+        "nè", "nghen", "hen", "hả", "ha", "kkk", "mọi", "người",
+        "ae", "ad", "oke", "ok", "uk", "ừ", "chứ", "j",
+        "hình ảnh", "file", "sticker", "audio"
     }
 
     print("Đang phân tích dữ liệu...")
@@ -63,6 +77,14 @@ def analyze_chat_log(file_path):
                 # 3. Thống kê theo ngày
                 stats["daily_activity"][dt.strftime('%Y-%m-%d')] += 1
 
+                # 4. Thống kê từ vựng (Word Cloud)
+                # Tách từ, chuyển về chữ thường và lọc ký tự đặc biệt
+                words = re.findall(r'\w+', content.lower())
+                for word in words:
+                    # Lọc các từ quá ngắn (dưới 2 ký tự) để giảm nhiễu
+                    if len(word) > 1 and word not in stopwords:
+                        stats["word_counts"][word] += 1
+
     except FileNotFoundError:
         print(f"Lỗi: Không tìm thấy file tại {file_path}")
         return
@@ -74,6 +96,15 @@ def analyze_chat_log(file_path):
     sorted_users = sorted(stats["user_stats"].items(), key=lambda x: x[1]['msg_count'], reverse=True)
     sorted_hours = sorted(stats["hourly_activity"].items(), key=lambda x: x[1], reverse=True)
     sorted_days = sorted(stats["daily_activity"].items(), key=lambda x: x[1], reverse=True)
+    
+    # Tạo timeline theo thứ tự thời gian cho biểu đồ Line
+    timeline_data = []
+    for date_str in sorted(stats["daily_activity"].keys()):
+        dt = datetime.strptime(date_str, '%Y-%m-%d')
+        timeline_data.append({
+            "date": dt.strftime('%d/%m'), # Format ngày/tháng cho biểu đồ
+            "count": stats["daily_activity"][date_str]
+        })
 
     # --- XUẤT FILE JSON ---
     json_output_path = os.path.join(output_dir, 'chat_statistics.json')
@@ -85,7 +116,9 @@ def analyze_chat_log(file_path):
         "rankings": {
             "users_by_messages": sorted_users,
             "busiest_hours": sorted_hours,
-            "busiest_days": sorted_days
+            "busiest_days": sorted_days,
+            "word_cloud": stats["word_counts"].most_common(100), # Top 100 từ phổ biến
+            "timeline": timeline_data
         }
     }
     

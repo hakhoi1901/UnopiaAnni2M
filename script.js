@@ -138,7 +138,7 @@ function initUptime() {
 }
 
 // --- 4. BIỂU ĐỒ (CHART.JS) ---
-function initCharts() {
+async function initCharts() {
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
     Chart.defaults.font.family = "'Outfit', sans-serif";
@@ -151,23 +151,21 @@ function initCharts() {
     gradientMsg.addColorStop(0, 'rgba(34, 211, 238, 0.6)'); // Cyan-400
     gradientMsg.addColorStop(1, 'rgba(34, 211, 238, 0)');
 
-    // Dữ liệu từ bảng thống kê (2025-12-07 đến 2026-01-22)
-    const rawData = [
-        { date: '07/12', count: 918 }, { date: '08/12', count: 710 }, { date: '13/12', count: 234 }, 
-        { date: '16/12', count: 59 }, { date: '18/12', count: 1491 }, { date: '19/12', count: 1700 }, 
-        { date: '20/12', count: 408 }, { date: '21/12', count: 2592 }, { date: '22/12', count: 1693 }, 
-        { date: '23/12', count: 375 }, { date: '24/12', count: 2041 }, { date: '25/12', count: 3717 }, 
-        { date: '26/12', count: 2715 }, { date: '27/12', count: 1790 }, { date: '28/12', count: 334 }, 
-        { date: '29/12', count: 1907 }, { date: '30/12', count: 1636 }, { date: '31/12', count: 1133 }, 
-        { date: '01/01', count: 715 }, { date: '02/01', count: 812 }, { date: '03/01', count: 3319 }, 
-        { date: '04/01', count: 1105 }, { date: '05/01', count: 1839 }, { date: '06/01', count: 379 }, 
-        { date: '07/01', count: 740 }, { date: '08/01', count: 1509 }, { date: '09/01', count: 694 }, 
-        { date: '10/01', count: 566 }, { date: '11/01', count: 868 }, { date: '12/01', count: 1266 }, 
-        { date: '13/01', count: 192 }, { date: '14/01', count: 819 }, { date: '15/01', count: 1922 }, 
-        { date: '16/01', count: 4036 }, { date: '17/01', count: 754 }, { date: '18/01', count: 1434 }, 
-        { date: '19/01', count: 2072 }, { date: '20/01', count: 1411 }, { date: '21/01', count: 4026 }, 
-        { date: '22/01', count: 662 }
-    ];
+    // Tải dữ liệu từ file JSON
+    let rawData = [];
+    try {
+        const response = await fetch('analysis/chat_statistics.json');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.rankings && data.rankings.timeline) {
+                rawData = data.rankings.timeline;
+            }
+        }
+    } catch (error) {
+        console.warn("Không tải được dữ liệu biểu đồ:", error);
+        // Dữ liệu mẫu fallback nếu lỗi
+        rawData = [{ date: '01/01', count: 100 }, { date: '02/01', count: 200 }];
+    }
 
     new Chart(ctxLine, {
         type: 'line',
@@ -326,20 +324,21 @@ function consoleEasterEgg() {
 }
 
 // --- 8. WORD CLOUD (MỚI) ---
-function initWordCloud() {
-
-    const rows = csvData.trim().split('\n');
+async function initWordCloud() {
     let list = [];
-    rows.forEach(row => {
-        const parts = row.split(',');
-        if (parts.length >= 2) {
-            const text = parts[0].trim();
-            const size = parseInt(parts[1].trim());
-            if (text && !isNaN(size)) {
-                list.push([text, size]);
+    
+    try {
+        const response = await fetch('analysis/chat_statistics.json');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.rankings && data.rankings.word_cloud) {
+                list = data.rankings.word_cloud; // Dữ liệu đã là dạng [["word", count], ...]
             }
         }
-    });
+    } catch (error) {
+        console.warn("Lỗi tải Word Cloud:", error);
+        // Fallback: Dùng dữ liệu mẫu nếu có hoặc để trống
+    }
 
     // Sắp xếp và lấy top 50
     list.sort((a, b) => b[1] - a[1]);
