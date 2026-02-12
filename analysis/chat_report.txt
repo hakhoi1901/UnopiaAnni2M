@@ -1,0 +1,27 @@
+=== BÁO CÁO PHÂN TÍCH HOẠT ĐỘNG CHAT ===
+
+Tổng số tin nhắn: 45498
+Số thành viên tham gia: 5
+
+1. THỐNG KÊ THÀNH VIÊN (Xếp theo số tin nhắn):
+Tên                       | Tin nhắn   | Số từ     
+--------------------------------------------------
+Lê Ngọc Tuyền             | 15272      | 72820     
+Mai Quỳnh Anh             | 14073      | 55394     
+Hà Đăng Khôi              | 7748       | 31510     
+Nghĩa Đoàn                | 5541       | 30100     
+Triêm Đoàn                | 2864       | 12082     
+
+2. TOP 5 KHUNG GIỜ HOẠT ĐỘNG SÔI NỔI NHẤT:
+   - 22h: 6269 tin nhắn
+   - 23h: 5847 tin nhắn
+   - 21h: 5793 tin nhắn
+   - 0h: 3895 tin nhắn
+   - 20h: 3324 tin nhắn
+
+3. TOP 5 NGÀY NHẮN TIN NHIỀU NHẤT:
+   - 2026-01-16: 3989 tin nhắn
+   - 2026-01-21: 3985 tin nhắn
+   - 2026-01-03: 3251 tin nhắn
+   - 2026-01-19: 2041 tin nhắn
+   - 2025-12-26: 2008 tin nhắn

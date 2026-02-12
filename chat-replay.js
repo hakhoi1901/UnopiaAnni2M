@@ -31,7 +31,7 @@ class ChatReplay {
 
         try {
             // Cố gắng tải file chat_log.txt
-            const response = await fetch('chat_log.txt');
+            const response = await fetch('/analysis/chat_log.txt');
             
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);

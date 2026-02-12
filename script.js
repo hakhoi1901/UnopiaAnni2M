@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCharts();
     initSliders();
     initWordCloud();
+    initChatStats(); // <--- Thêm dòng này
     initFloatingMemories(); 
     initOracle();
     initMessageBottles(); 
@@ -432,6 +433,108 @@ function initWordCloud() {
 
         container.appendChild(el);
     });
+}
+
+// --- 8.1. THỐNG KÊ CHAT (NEW) ---
+async function initChatStats() {
+    const container = document.getElementById('chat-stats-content');
+    const loading = document.getElementById('chat-stats-loading');
+    
+    // Đường dẫn tới file JSON do python tạo ra
+    // Lưu ý: Đảm bảo bạn đã chạy script python và file nằm đúng chỗ
+    // Nếu file nằm trong thư mục analysis: 'analysis/chat_statistics.json'
+    const jsonPath = 'analysis/chat_statistics.json'; 
+
+    try {
+        const response = await fetch(jsonPath);
+        if (!response.ok) {
+            // Fallback nếu không tìm thấy file trong thư mục analysis
+            const responseRoot = await fetch('chat_statistics.json');
+            if(!responseRoot.ok) throw new Error('Không tìm thấy file thống kê');
+            var data = await responseRoot.json();
+        } else {
+            var data = await response.json();
+        }
+        
+        loading.classList.add('hidden');
+        container.classList.remove('hidden');
+        
+        // 1. Render Summary Cards
+        const summaryHtml = `
+            <div class="glass-card p-4 rounded-xl text-center border border-cyan-500/20">
+                <div class="text-2xl font-bold text-white">${data.summary.total_messages.toLocaleString()}</div>
+                <div class="text-xs text-cyan-400 uppercase tracking-wider mt-1">Tổng tin nhắn</div>
+            </div>
+            <div class="glass-card p-4 rounded-xl text-center border border-blue-500/20">
+                <div class="text-2xl font-bold text-white">${data.summary.total_users}</div>
+                <div class="text-xs text-blue-400 uppercase tracking-wider mt-1">Thành viên</div>
+            </div>
+             <div class="glass-card p-4 rounded-xl text-center border border-purple-500/20">
+                <div class="text-xl font-bold text-white">${data.rankings.busiest_days[0][0]}</div>
+                <div class="text-xs text-purple-400 uppercase tracking-wider mt-1">Ngày sôi nổi nhất</div>
+            </div>
+             <div class="glass-card p-4 rounded-xl text-center border border-pink-500/20">
+                <div class="text-2xl font-bold text-white">${data.rankings.busiest_hours[0][0]}h</div>
+                <div class="text-xs text-pink-400 uppercase tracking-wider mt-1">Giờ cao điểm</div>
+            </div>
+        `;
+        document.getElementById('stats-summary').innerHTML = summaryHtml;
+
+        // 2. Render Top Users Table
+        const usersHtml = data.rankings.users_by_messages.slice(0, 10).map((u, index) => {
+            const rankColor = index === 0 ? 'text-yellow-400' : (index === 1 ? 'text-slate-300' : (index === 2 ? 'text-amber-600' : 'text-slate-500'));
+            return `
+            <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-4 py-3 flex items-center gap-2">
+                    <span class="font-bold ${rankColor}">#${index + 1}</span>
+                    <span class="font-medium text-white">${u[0]}</span>
+                </td>
+                <td class="px-4 py-3 text-right font-mono text-cyan-300">${u[1].msg_count.toLocaleString()}</td>
+                <td class="px-4 py-3 text-right font-mono text-slate-400">${u[1].word_count.toLocaleString()}</td>
+            </tr>
+        `}).join('');
+        document.getElementById('stats-users-table').innerHTML = usersHtml;
+
+        // 3. Render Hourly Chart
+        const ctx = document.getElementById('hourlyActivityChart').getContext('2d');
+        
+        // Chuẩn bị dữ liệu 24h (đảm bảo đủ 0-23h)
+        const hoursData = Array(24).fill(0);
+        data.rankings.busiest_hours.forEach(([hour, count]) => {
+            hoursData[parseInt(hour)] = count;
+        });
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => `${i}h`),
+                datasets: [{
+                    label: 'Tin nhắn',
+                    data: hoursData,
+                    backgroundColor: 'rgba(244, 114, 182, 0.6)', // Pink-400
+                    borderColor: 'rgba(244, 114, 182, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    hoverBackgroundColor: '#f472b6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                    x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                }
+            }
+        });
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+    } catch (e) {
+        console.warn("Chưa tải được thống kê chat:", e);
+        loading.innerHTML = `<span class="text-red-400">⚠️ Chưa tìm thấy file dữ liệu (analysis/chat_statistics.json).<br>Hãy chạy file python analyze_chat.py trước nhé!</span>`;
+    }
 }
 
 // --- 9. FLOATING GALLERY (KÝ ỨC TRÔI NỔI) ---
