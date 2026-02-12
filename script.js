@@ -342,7 +342,7 @@ function initWordCloud() {
 
     // Sắp xếp và lấy top 50
     list.sort((a, b) => b[1] - a[1]);
-    list = list.slice(0, 50);
+    list = list.slice(0, 70);
 
     // Cập nhật Top 3
     if(list.length > 0) document.getElementById('top-word-1').innerText = `${list[0][0]} (${list[0][1]})`;
@@ -598,219 +598,6 @@ function initFloatingMemories() {
 
         container.appendChild(img);
     });
-}
-
-// --- 10. THÔNG ĐIỆP TRONG CHAI (MESSAGE IN A BOTTLE) ---
-function initMessageBottles() {
-    // 1. DỮ LIỆU: NHỮNG BÍ MẬT ĐỘNG TRỜI
-    const secrets = [
-        "Thực ra hôm demo tui hard-code kết quả đó, chứ logic chưa chạy đâu.",
-        "Mỗi lần ông A merge code là tui nín thở 5 phút.",
-        "Tui đã lén chỉnh CSS của bà B vì nhìn nó lệch 1px tui chịu không nổi.",
-        "Hôm họp online tui tắt cam để ngồi ăn mì gói.",
-        "Cái bug hôm bữa tui fix lụi bằng `if (true)`, đừng ai check lại nha.",
-        "Tui còn giữ ảnh dìm hàng cả nhóm lúc ngủ gật, đợi ngày tốt nghiệp sẽ tung.",
-        "Code này tui copy trên StackOverflow, dòng comment cũng copy y chang.",
-        "Thực ra tui không hiểu cái function `xyz` nó chạy sao hết, nhưng nó chạy là được.",
-        "Có lần tui lỡ xóa nhầm bảng User, may mà có backup.",
-        "Deadline dí quá nên tui đã uống 4 ly cafe trong 1 đêm (đừng bắt chước).",
-        "Tui thề là tui đã git push rồi, tại mạng lag thôi (thật ra là quên)."
-    ];
-
-    // 2. INJECT CSS & HTML CHO MODAL
-    // Tạo style riêng cho chai và modal
-    const styleId = 'bottle-style';
-    if (!document.getElementById(styleId)) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.textContent = `
-            /* Container cho chai trôi */
-            #bottle-layer {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                pointer-events: none; /* Để không chặn click vào web */
-                z-index: 40; /* Nằm dưới Navbar nhưng trên nền */
-                overflow: hidden;
-            }
-
-            /* Cái chai */
-            .drifting-bottle {
-                position: absolute;
-                cursor: pointer;
-                pointer-events: auto; /* Bật lại click cho chai */
-                filter: drop-shadow(0 5px 15px rgba(0,0,0,0.5));
-                transition: transform 0.3s ease;
-                opacity: 0.8;
-            }
-            .drifting-bottle:hover {
-                transform: scale(1.2) rotate(-10deg) !important;
-                filter: drop-shadow(0 0 20px rgba(34, 211, 238, 0.8));
-                opacity: 1;
-            }
-
-            /* Modal hiển thị tin nhắn */
-            #message-modal {
-                position: fixed;
-                inset: 0;
-                z-index: 1000;
-                background: rgba(2, 6, 23, 0.8);
-                backdrop-filter: blur(8px);
-                display: none; /* Mặc định ẩn */
-                align-items: center;
-                justify-content: center;
-                opacity: 0;
-                transition: opacity 0.3s ease;
-            }
-            #message-modal.open {
-                display: flex;
-                opacity: 1;
-            }
-
-            .paper-content {
-                background: #fef3c7; /* Màu giấy cũ (Amber-100) */
-                color: #451a03; /* Màu mực nâu */
-                width: 90%;
-                max-width: 500px;
-                padding: 3rem;
-                border-radius: 4px;
-                box-shadow: 0 0 50px rgba(251, 191, 36, 0.2);
-                position: relative;
-                transform: scale(0.8) translateY(20px);
-                transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-                font-family: 'Courier New', Courier, monospace; /* Font máy đánh chữ */
-                line-height: 1.6;
-                background-image: url('https://www.transparenttextures.com/patterns/aged-paper.png');
-            }
-            #message-modal.open .paper-content {
-                transform: scale(1) translateY(0);
-            }
-
-            /* Nút đóng X */
-            .close-modal {
-                position: absolute;
-                top: 10px;
-                right: 15px;
-                font-size: 1.5rem;
-                cursor: pointer;
-                color: #78350f;
-                opacity: 0.5;
-                transition: opacity 0.2s;
-            }
-            .close-modal:hover { opacity: 1; }
-
-            /* Hiệu ứng trôi (Drift Animation) */
-            @keyframes floatRight {
-                0% { left: -100px; transform: translateY(0) rotate(15deg); }
-                25% { transform: translateY(-30px) rotate(0deg); }
-                50% { transform: translateY(0) rotate(-10deg); }
-                75% { transform: translateY(30px) rotate(5deg); }
-                100% { left: 100vw; transform: translateY(0) rotate(15deg); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-
-    // Inject HTML Modal vào body nếu chưa có
-    if (!document.getElementById('message-modal')) {
-        const modalHTML = `
-            <div id="bottle-layer"></div>
-            <div id="message-modal">
-                <div class="paper-content">
-                    <span class="close-modal">&times;</span>
-                    <div class="text-center mb-4">
-                        <i data-lucide="scroll" class="w-10 h-10 mx-auto text-amber-700 opacity-50"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-center mb-4 uppercase tracking-widest border-b-2 border-amber-900/10 pb-2">Mật Thư</h3>
-                    <p id="secret-content" class="text-lg font-medium text-justify italic">Loading...</p>
-                    <div class="mt-6 text-right text-sm opacity-60">- Anonymous -</div>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-    }
-
-    // 3. LOGIC XỬ LÝ
-    const bottleLayer = document.getElementById('bottle-layer');
-    const modal = document.getElementById('message-modal');
-    const closeBtn = document.querySelector('.close-modal');
-    const secretContent = document.getElementById('secret-content');
-
-    // Hàm đóng Modal
-    const closeModal = () => {
-        modal.classList.remove('open');
-        // Sau khi đóng, tiếp tục random chai mới
-        scheduleNextBottle(); 
-    };
-
-    closeBtn.addEventListener('click', closeModal);
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
-
-    // Hàm tạo chai trôi
-    const spawnBottle = () => {
-        // Nếu modal đang mở thì không thả chai
-        if (modal.classList.contains('open')) return;
-
-        const bottle = document.createElement('div');
-        bottle.className = 'drifting-bottle';
-        // Icon chai thủy tinh (SVG Inline cho nét)
-        bottle.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#a5f3fc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-lg">
-                <path d="M10 2v2a2 2 0 0 1-2 2v2.5"/>
-                <path d="M14 2v2a2 2 0 0 0 2 2v2.5"/>
-                <path d="M6 8.5V19a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V8.5"/>
-                <path d="M9 13.5l2.5 2.5 3.5-3.5"/> <!-- Hình cuộn giấy bên trong -->
-                <path d="M10 2h4"/>
-            </svg>
-        `;
-
-        // Random vị trí xuất phát (độ cao Y)
-        // Chỉ xuất hiện ở 60% chiều cao màn hình phía trên (tránh che footer/player)
-        const randomTop = Math.random() * 60 + 10; 
-        bottle.style.top = `${randomTop}%`;
-
-        // Thời gian trôi (tốc độ): 15s - 25s
-        const duration = Math.random() * 10 + 15;
-        bottle.style.animation = `floatRight ${duration}s linear forwards`;
-
-        // Sự kiện click vào chai
-        bottle.addEventListener('click', () => {
-            // Dừng chai lại
-            bottle.remove(); 
-            
-            // Random nội dung
-            const msg = secrets[Math.floor(Math.random() * secrets.length)];
-            secretContent.innerText = `"${msg}"`;
-            
-            // Hiện modal
-            modal.classList.add('open');
-            
-            // Re-init icon lucide trong modal (nếu cần)
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        });
-
-        // Xóa chai khi trôi xong (để không nặng DOM)
-        bottle.addEventListener('animationend', () => {
-            bottle.remove();
-            scheduleNextBottle(); // Thả chai tiếp theo nếu chai này bị trôi mất
-        });
-
-        bottleLayer.appendChild(bottle);
-    };
-
-    // Hàm lên lịch thả chai (Random thời gian xuất hiện)
-    const scheduleNextBottle = () => {
-        // Random từ 10s đến 30s sẽ xuất hiện 1 chai
-        const nextTime = Math.random() * 20000 + 10000; 
-        setTimeout(spawnBottle, nextTime);
-    };
-
-    // Bắt đầu thả chai đầu tiên sau 5s
-    setTimeout(spawnBottle, 5000);
 }
 
 // --- 10. THÔNG ĐIỆP TRONG CHAI (MESSAGE IN A BOTTLE) ---
@@ -1075,7 +862,7 @@ function initMessageBottles() {
     };
 
     const scheduleNextBottle = () => {
-        const nextTime = Math.random() * 1000000 + 10000; 
+        const nextTime = Math.random() * 20000 + 30000; 
         setTimeout(spawnBottle, nextTime);
     };
 
@@ -1339,7 +1126,9 @@ function initLuckyWheel() {
     });
 
     inputArea.addEventListener('input', parseItems);
-    triggerBtn.addEventListener('click', () => { modal.classList.add('open'); parseItems(); });
+    triggerBtn.addEventListener('click', () => {
+        alert("🚧 Khu vực đang được nâng cấp nên HK ẩn nó đi nhé!\n\n(Chức năng này sẽ sớm mở khóa, anh em chờ nhé!)");
+    });
     const closeModal = () => { if(!isSpinning) modal.classList.remove('open'); };
     closeBtn.addEventListener('click', closeModal);
     modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
@@ -1543,7 +1332,7 @@ function initGoldenAwards() {
 
                 <!-- Intro Screen -->
                 <div id="intro-screen" class="intro-screen">
-                    <div class="intro-title">THE GOLDEN BUG<br>AWARDS 2024</div>
+                    <div class="intro-title">THE GOLDEN BUG<br>AWARDS 2025</div>
                     <p class="text-xl text-slate-300">Chào mừng đến với đêm vinh danh những sai lầm...</p>
                     <p class="text-sm text-slate-500 mt-4">(Nhấn 'Bắt đầu' hoặc phím Mũi tên phải)</p>
                 </div>
@@ -1882,8 +1671,8 @@ function initGameCenter() {
     const closeBtn = document.querySelector('.close-game');
 
     // Mở Game Center
-    trigger.addEventListener('click', () => {
-        modal.classList.add('open');
+    triggerBtn.addEventListener('click', () => {
+        alert("🚧 Khu vực đang được nâng cấp nên HK ẩn nó đi nhé!\n\n(Chức năng này sẽ sớm mở khóa, anh em chờ nhé!)");
     });
 
     // Đóng Game Center
@@ -2362,7 +2151,8 @@ const quotes = [
     "Đây là tính năng, không phải lỗi.",
     "Hôm nay code chạy, ngày mai chưa biết.",
     "Thức đêm mới biết đêm dài, làm đồ án mới biết mình... sai ngành.",
-    "Thi xong buồn vì làm bài không được, nhưng nhìn sang cả khoa cũng thế... tự nhiên thấy vui.",
+    // "Thi xong buồn vì làm bài không được, nhưng nhìn sang cả khoa cũng thế... tự nhiên thấy vui.",
+    "Đừng buồn vì mình làm không tốt, vì... có ai làm được đâu",
     "Nay OT nha.",
     "Chắc đề thi không có phần này đâu.",
     "Code chạy trên máy tui mà?",
@@ -2375,11 +2165,10 @@ const qaList = [
     { q: "Ngày thành lập group là ngày mấy?", a: "07/12/2025" },
     { q: "Group này chơi uno với nhau bao nhiêu lần rồi?", a: "3 lần" },
     { q: "Tên đầy đủ của nhóm này là gì?", a: "KidUS Unopia" },
-    { q: "Trường cấp 2 cũ của NT tên gì?", a: "1 đến 8 (Đùa thôi, đi hỏi thầy đi)." },
+    { q: "Trường cấp 2 cũ của NT tên gì?", a: "THCS Tân Hưng" },
     { q: "Ai là người đi sớm nhất group?", a: "Quỳnh Anh" },
     { q: "Ai là người sẽ bao nuôi cả nhóm nêu proj không sinh tiền?", a: "TongTai :3" },
-    { q: "Ngày đầu chúng ta ngồi họp với nhau là ngày nào?", a: "A+ trong mơ, B+ trong tầm tay, C+ nếu xui." },
-    { q: "Câu nói dối kinh điển nhất của Dev?", a: "'Code chạy trên máy tui bình thường mà!'" },
-    { q: "Thực ra tui có hiểu code tui viết không?", a: "Không. Tui copy trên StackOverflow đó." },
-    { q: "Ai là người chi nhiều tiền trà sữa nhất?", a: "Trưởng nhóm (được bao hay không thì chưa biết)." }
+    { q: "Ngày đầu chúng ta ngồi họp với nhau là ngày nào?", a: "21.12.2025" },
+    { q: "Ai là người bị tuột quần trong lời kể của NT", a: "Hàm Triêm" },
+    { q: "Ai là người có nhiều biệt danh nhất nhóm?", a: "Hà Khôi" },
 ];
